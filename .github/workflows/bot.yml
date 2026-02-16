@@ -2,6 +2,8 @@ name: HotWheels Bot
 
 on:
   schedule:
+    # Runs at:
+    # 4 AM, 6 AM, 9 AM–11 PM IST
     - cron: '30 22,0,3-17 * * *'
   workflow_dispatch:
 
@@ -10,18 +12,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - name: Install Chromium
+      # Install Google Chrome properly
+      - name: Install Google Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo apt-get install -y wget gnupg
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
 
       - name: Run bot
         env:
@@ -29,6 +39,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python hotwheels_bot.py
 
+      # Persist seen_cars.txt
       - name: Commit updated history file
         run: |
           git config --global user.name "github-actions"
